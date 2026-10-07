@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsClassifier &mdash; Sistem Klasifikasi Berita SVM & Skip-Gram</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <header class="app-header">
+      <div class="brand-area">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+            <path d="M18 14h-8"/>
+            <path d="M15 18h-5"/>
+            <path d="M10 6h8v4h-8V6Z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">NewsClassifier</span>
+          <span class="brand-sub">PPW Text Mining</span>
+        </div>
+      </div>
+      
+      <div class="header-badges">
+        <span class="status-pill status-ready" id="modelStatusPill">
+          <span class="status-dot"></span>
+          <span id="modelStatusText">Model Ready</span>
+        </span>
+        <span class="model-meta-pill">SVM &bull; Skip-Gram</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Hero Intro -->
+      <section class="hero-section">
+        <h1 class="hero-title">Klasifikasi Artikel Berita Otomatis</h1>
+        <p class="hero-desc">
+          Ekstraksi otomatis konten berita dari URL, preprocessing teks mendalam, 
+          vektorisasi Word2Vec Skip-Gram (Mean Vector), dan klasifikasi kategori menggunakan Support Vector Machine.
+        </p>
+      </section>
+
+      <!-- Input Card -->
+      <section class="card input-card">
+        <!-- Input Mode Switcher -->
+        <div class="mode-tabs">
+          <button type="button" class="tab-btn active" id="tabUrlBtn" onclick="switchMode('url')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Ekstraksi Tautan (URL)
+          </button>
+          <button type="button" class="tab-btn" id="tabTextBtn" onclick="switchMode('text')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Input Teks Langsung
+          </button>
+        </div>
+
+        <!-- URL Input Form -->
+        <form id="urlForm" class="form-container" onsubmit="handleUrlSubmit(event)">
+          <div class="input-group">
+            <div class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <input 
+              type="url" 
+              id="urlInput" 
+              placeholder="Tempel tautan berita di sini (cth: https://sport.detik.com/... atau https://finance.detik.com/...)" 
+              required
+              autocomplete="off"
+            />
+            <button type="submit" class="submit-btn" id="btnSubmitUrl">
+              <span class="btn-text">Klasifikasikan</span>
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Quick Samples -->
+          <div class="quick-samples">
+            <span class="samples-label">Coba Contoh Tautan:</span>
+            <button type="button" class="sample-chip" onclick="fillUrl('https://sport.detik.com/sepakbola/liga-indonesia/d-7689123/timnas-indonesia-lolos-ke-babak-berikutnya-kualifikasi-piala-dunia')">
+              ⚽ Berita Sepakbola (Sport)
+            </button>
+            <button type="button" class="sample-chip" onclick="fillUrl('https://finance.detik.com/moneter/d-7689456/nilai-tukar-rupiah-menguat-terhadap-dolar-as-ihsg-naik-tajam')">
+              📈 Berita Finansial (Finance)
+            </button>
+          </div>
+        </form>
+
+        <!-- Direct Text Input Form (Hidden by default) -->
+        <form id="textForm" class="form-container hidden" onsubmit="handleTextSubmit(event)">
+          <div class="textarea-group">
+            <textarea 
+              id="textInput" 
+              rows="5" 
+              placeholder="Ketik atau tempel paragraf teks berita di sini..."
+              required
+            ></textarea>
+          </div>
+          <div class="form-footer">
+            <span class="text-hint">Minimal 10 karakter teks berita.</span>
+            <button type="submit" class="submit-btn" id="btnSubmitText">
+              <span class="btn-text">Klasifikasikan Teks</span>
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Error Banner -->
+        <div id="errorAlert" class="alert-box alert-error hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div class="alert-content">
+            <strong class="alert-title">Gagal Memproses</strong>
+            <p id="errorMessage" class="alert-desc">Terjadi kesalahan.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Processing State Indicator -->
+      <section id="processingCard" class="card processing-card hidden">
+        <div class="spinner-container">
+          <div class="spinner"></div>
+        </div>
+        <div class="processing-info">
+          <h3 id="stepTitle" class="processing-title">Mengekstraksi Konten Berita...</h3>
+          <p id="stepSubtitle" class="processing-subtitle">Mengambil data dari URL dan mengurai struktur artikel</p>
+        </div>
+        <div class="pipeline-tracker">
+          <div class="tracker-item active" id="track-step-1">1. Scraping URL</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-2">2. Noise Cleaning</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-3">3. Preprocessing (Sastrawi)</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-4">4. Skip-Gram Embedding</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-5">5. Prediksi SVM</div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultSection" class="results-wrapper hidden">
+        <!-- Main Result Card -->
+        <div class="card result-card">
+          <div class="result-header">
+            <div class="pred-label-wrapper">
+              <span class="pred-subheading">Kategori Terprediksi</span>
+              <div class="pred-highlight">
+                <span id="predictedBadge" class="pred-badge badge-sport">SPORT</span>
+                <span class="exec-time-pill" id="execTimeBadge">0.0 ms</span>
+              </div>
+            </div>
+
+            <!-- Probabilities breakdown -->
+            <div class="prob-wrapper" id="probContainer">
+              <div class="prob-label">Distribusi Keyakinan Model:</div>
+              <div class="prob-bars">
+                <div class="prob-row">
+                  <span class="prob-name">Sport</span>
+                  <div class="prob-bar-bg">
+                    <div id="probBarSport" class="prob-bar-fill fill-sport" style="width: 0%;"></div>
+                  </div>
+                  <span id="probValSport" class="prob-pct">0%</span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-name">Finance</span>
+                  <div class="prob-bar-bg">
+                    <div id="probBarFinance" class="prob-bar-fill fill-finance" style="width: 0%;"></div>
+                  </div>
+                  <span id="probValFinance" class="prob-pct">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadata Grid -->
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Judul Berita</span>
+              <span id="metaTitle" class="meta-val highlight-title">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Penulis / Redaksi</span>
+              <span id="metaAuthor" class="meta-val">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Tanggal Publikasi</span>
+              <span id="metaDate" class="meta-val">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Tautan Asli</span>
+              <a id="metaUrl" href="#" target="_blank" rel="noopener noreferrer" class="meta-link">-</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deep Details Tabs Card -->
+        <div class="card details-card">
+          <div class="details-tab-header">
+            <button class="dtab-btn active" onclick="switchDetailTab('content')">
+              Konten Terekstraksi (<span id="tabWordCount">0</span> kata)
+            </button>
+            <button class="dtab-btn" onclick="switchDetailTab('preprocessing')">
+              Hasil Preprocessing Sastrawi
+            </button>
+            <button class="dtab-btn" onclick="switchDetailTab('embedding')">
+              Detail Skip-Gram Embedding
+            </button>
+          </div>
+
+          <div class="details-tab-body">
+            <!-- Tab 1: Extracted Content -->
+            <div id="dtab-content" class="dtab-pane active">
+              <div class="pane-header">
+                <span class="pane-note">Konten artikel bersih yang berhasil diekstrak melalui modul trafilatura:</span>
+                <button type="button" class="btn-copy" onclick="copyText('contentBody')">Salin Teks</button>
+              </div>
+              <div id="contentBody" class="text-content-box"></div>
+            </div>
+
+            <!-- Tab 2: Preprocessing -->
+            <div id="dtab-preprocessing" class="dtab-pane">
+              <div class="stat-pills-row">
+                <div class="stat-card">
+                  <span class="stat-num" id="statTotalTokens">0</span>
+                  <span class="stat-desc">Total Token Kata</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="statMatchedTokens">0</span>
+                  <span class="stat-desc">Token Masuk Vocab</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="statOovTokens">0</span>
+                  <span class="stat-desc">Token Di Luar Vocab (OOV)</span>
+                </div>
+              </div>
+              <div class="pane-header">
+                <span class="pane-note">Teks setelah pembersihan noise, stopword removal, dan stemming Sastrawi:</span>
+                <button type="button" class="btn-copy" onclick="copyText('preprocessedBody')">Salin Hasil</button>
+              </div>
+              <div id="preprocessedBody" class="text-content-box font-mono"></div>
+            </div>
+
+            <!-- Tab 3: Word Embedding -->
+            <div id="dtab-embedding" class="dtab-pane">
+              <div class="embedding-info-grid">
+                <div class="embed-box">
+                  <div class="embed-title">Dimensi Vektor Fitur (Skip-Gram)</div>
+                  <div class="embed-val" id="embedDimVal">100 Dimensi</div>
+                </div>
+                <div class="embed-box">
+                  <div class="embed-title">Metode Representasi Dokumen</div>
+                  <div class="embed-val">Mean Word Vector (\(\frac{1}{N}\sum v_i\))</div>
+                </div>
+              </div>
+
+              <div class="pane-header">
+                <span class="pane-note">Sampel kata yang ditemukan dalam vocabulary Skip-Gram:</span>
+              </div>
+              <div id="vocabChips" class="vocab-chips-container"></div>
+
+              <div class="pane-header mt-4">
+                <span class="pane-note">Cuplikan 10 Nilai Pertama Rata-rata Vektor Dokumen:</span>
+              </div>
+              <div id="vectorSampleBox" class="vector-box font-mono"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Reset -->
+        <div class="action-footer">
+          <button type="button" class="btn-secondary" onclick="resetApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Uji Artikel Lain
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span>Web Sistem Klasifikasi Berita &copy; 2026</span>
+        <span class="footer-separator">&bull;</span>
+        <span>Model: SVM Classifier + Skip-Gram Word Embedding</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
