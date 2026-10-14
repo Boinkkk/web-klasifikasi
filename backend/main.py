@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 # Root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,9 +17,9 @@ from link_extraction import extract_news
 from backend.predictor import get_pipeline
 
 app = FastAPI(
-    title="Sistem Klasifikasi Berita (Skip-Gram & SVM)",
-    description="Ekstraksi artikel berita otomatis dan klasifikasi kategori (Sport / Finance)",
-    version="1.0.0"
+    title="Sistem Klasifikasi Berita (Skip-Gram & TF-IDF)",
+    description="Ekstraksi artikel berita otomatis dan klasifikasi kategori (Sport / Finance) dengan pilihan Skip-Gram atau TF-IDF",
+    version="1.1.0"
 )
 
 # CORS Middleware
@@ -34,9 +34,11 @@ app.add_middleware(
 # Request Models
 class UrlRequest(BaseModel):
     url: str
+    method: str = "skipgram"  # "skipgram" atau "tfidf"
 
 class TextRequest(BaseModel):
     text: str
+    method: str = "skipgram"  # "skipgram" atau "tfidf"
 
 
 @app.on_event("startup")
@@ -44,7 +46,8 @@ def startup_event():
     print("[SERVER] Memulai server FastAPI...")
     try:
         pipeline = get_pipeline()
-        print(f"[SERVER] Pipeline siap. Kategori: {pipeline.classes}, Dimensi: {pipeline.vector_size}")
+        print(f"[SERVER] Pipeline siap. Kategori: {pipeline.classes}")
+        print(f"[SERVER] Skip-gram aktif: {pipeline.clf_skipgram is not None}, TF-IDF aktif: {pipeline.clf_tfidf is not None}")
     except Exception as e:
         print(f"[SERVER ERROR] Gagal inisialisasi model pada startup: {e}")
 
@@ -56,7 +59,9 @@ def health_check():
         return {
             "status": "ready",
             "model_classes": pipeline.classes,
-            "vector_dimension": pipeline.vector_size,
+            "skipgram_available": pipeline.clf_skipgram is not None and pipeline.wv is not None,
+            "tfidf_available": pipeline.clf_tfidf is not None and pipeline.tfidf_vectorizer is not None,
+            "skipgram_dim": pipeline.skipgram_vector_size,
             "models_loaded": pipeline.is_loaded
         }
     except Exception as e:
@@ -71,6 +76,10 @@ def classify_url(payload: UrlRequest):
     url = payload.url.strip()
     if not url.startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="URL harus diawali dengan http:// atau https://")
+
+    method = payload.method.lower().strip()
+    if method not in ["skipgram", "tfidf"]:
+        method = "skipgram"
 
     start_time = time.time()
 
@@ -94,20 +103,21 @@ def classify_url(payload: UrlRequest):
             detail="Teks artikel tidak ditemukan atau terlalu pendek setelah proses ekstraksi."
         )
 
-    # 2. Klasifikasi menggunakan Word2Vec Skip-Gram & SVM
+    # 2. Klasifikasi menggunakan metode yang dipilih (Skip-gram atau TF-IDF)
     try:
         pipeline = get_pipeline()
-        classification_result = pipeline.classify_text(content)
+        classification_result = pipeline.classify_text(content, method=method)
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Terjadi kesalahan saat memproses klasifikasi: {str(e)}"
+            detail=f"Terjadi kesalahan saat memproses klasifikasi ({method}): {str(e)}"
         )
 
     elapsed_ms = round((time.time() - start_time) * 1000, 2)
 
     return {
         "status": "success",
+        "method_selected": method,
         "scraping": {
             "url": scraped_data.get("url"),
             "title": scraped_data.get("title") or "Tidak ada judul terdeteksi",
@@ -127,17 +137,22 @@ def classify_direct_text(payload: TextRequest):
     if len(text) < 10:
         raise HTTPException(status_code=400, detail="Teks minimal harus terdiri dari 10 karakter.")
 
+    method = payload.method.lower().strip()
+    if method not in ["skipgram", "tfidf"]:
+        method = "skipgram"
+
     start_time = time.time()
     try:
         pipeline = get_pipeline()
-        classification_result = pipeline.classify_text(text)
+        classification_result = pipeline.classify_text(text, method=method)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal memproses teks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Gagal memproses teks ({method}): {str(e)}")
 
     elapsed_ms = round((time.time() - start_time) * 1000, 2)
 
     return {
         "status": "success",
+        "method_selected": method,
         "scraping": {
             "url": None,
             "title": "Input Teks Langsung",

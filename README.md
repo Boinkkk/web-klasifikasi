@@ -1,64 +1,45 @@
-# Web Sistem Klasifikasi Berita (FastAPI + Skip-Gram + SVM)
+# Web Sistem Klasifikasi Berita (FastAPI + Skip-Gram & TF-IDF)
 
-Aplikasi web klasifikasi artikel berita otomatis berdasarkan tautan (URL) menggunakan metode **Word2Vec Skip-Gram (Mean Word Vector)** untuk ekstraksi fitur teks dan **Support Vector Machine (SVM)** untuk klasifikasi kategori (**Sport** & **Finance**).
+Aplikasi web klasifikasi artikel berita otomatis berdasarkan tautan (URL) dengan fleksibilitas pemilihan metode ekstraksi fitur teks:
+1. **Word2Vec Skip-Gram (Mean Word Vector)**:
+   - Pembersihan noise aktif.
+   - **Stopword removal & stemming dinonaktifkan / dilewati**.
+   - Model Word2Vec Skip-gram (`model_skipgram_terbaik.model`) & SVM Classifier (`model_klasifikasi_terbaik.joblib`).
+2. **TF-IDF Vectorizer**:
+   - Pembersihan noise aktif.
+   - **Stopword removal & stemming Sastrawi diterapkan secara penuh**.
+   - Model TF-IDF Vectorizer (`tfidf_vectorizer.joblib`) & Classifier TF-IDF (`model_klasifikasi_tfidf_terbaik.joblib`).
 
-## 🚀 Fitur Utama
-1. **Ekstraksi Berita Otomatis (Web Scraping)**: Mengambil konten utama, judul, penulis, dan tanggal publikasi dari URL menggunakan library `trafilatura`.
-2. **Text Preprocessing Pipeline**:
-   - Pembersihan noise & teks non-alfabet (`bersihkan_noise_teks`).
-   - Stopword Removal & Stemming Bahasa Indonesia menggunakan library `Sastrawi` (`stopword_dan_stemming`).
-3. **Word Embedding (Skip-Gram)**:
-   - Representasi dokumen dihitung menggunakan **Mean Word Vector** dari token yang cocok dengan vocabulary model Word2Vec Skip-Gram.
-4. **Klasifikasi Kategori**:
-   - Model Support Vector Machine (SVM) memprediksi kategori target (**Sport** atau **Finance**) beserta probabilitas / tingkat keyakinan.
-5. **Antarmuka Modern & Minimalis**:
-   - Desain modern, bersih, profesional, dan responsif.
-   - Dilengkapi tombol cepat contoh tautan berita.
-   - Menampilkan transparansi seluruh tahapan pemrosesan teks (konten terekstraksi, hasil preprocessing Sastrawi, hingga statistik embedding).
+Kategori klasifikasi target: **Sport** & **Finance**.
 
 ---
 
-## 📁 Struktur Direktori
-```text
-web-klasifikasi/
-├── backend/
-│   ├── __init__.py
-│   ├── main.py                  # Server FastAPI & endpoint API
-│   ├── predictor.py             # Pipeline inference (Word2Vec + SVM)
-│   └── model/
-│       ├── model_klasifikasi_terbaik.joblib   # Model klasifikasi SVM
-│       └── model_skipgram_terbaik.model       # Model Skip-gram Word2Vec
-├── frontend/
-│   ├── index.html               # Halaman antarmuka pengguna
-│   ├── style.css                # Desain visual modern & profesional
-│   └── app.js                   # Interaksi frontend & pemanggilan API
-├── link_extraction.py           # Ekstraksi konten berita dari URL
-├── preprocessing.py             # Fungsi pembersihan teks & Sastrawi
-├── run.py                       # Script praktis untuk menjalankan server
-└── requirements.txt             # Dependensi Python
-```
+## 🚀 Fitur Utama
+1. **Pemilihan Pemodelan Interaktif**: Pengguna dapat memilih antara **Skip-Gram** atau **TF-IDF** langsung di antarmuka web.
+2. **Ekstraksi Berita Otomatis (Web Scraping)**: Mengambil konten utama, judul, penulis, dan tanggal publikasi dari URL menggunakan library `trafilatura`.
+3. **Penyajian Transparan Seluruh Alur NLP**:
+   - Konten asli hasil ekstraksi artikel.
+   - Teks hasil preprocessing sesuai metode yang dipilih.
+   - Rincian vektor fitur (Mean vector untuk Skip-gram, atau daftar kata kunci teratas beserta bobot TF-IDF untuk TF-IDF).
+   - Distribusi probabilitas/keyakinan model (*Sport* vs *Finance*).
+
+---
+
+## 📁 Struktur Model (`backend/model/`)
+- `model_skipgram_terbaik.model`: Model Word2Vec Skip-gram
+- `model_klasifikasi_terbaik.joblib`: Model klasifikasi untuk representasi Skip-gram
+- `tfidf_vectorizer.joblib`: Model TF-IDF Vectorizer
+- `model_klasifikasi_tfidf_terbaik.joblib`: Model klasifikasi untuk representasi TF-IDF
 
 ---
 
 ## 🛠️ Cara Menjalankan
 
-### 1. Install Dependensi
-Pastikan dependensi telah terpasang:
 ```bash
+# 1. Install dependensi
 pip install -r requirements.txt
-```
 
-### 2. Jalankan Server Web
-Jalankan file `run.py`:
-```bash
+# 2. Jalankan server
 python run.py
 ```
-atau menggunakan perintah `uvicorn`:
-```bash
-uvicorn backend.main:app --reload --port 8000
-```
-
-### 3. Buka di Browser
-Akses aplikasi web di browser:
-- **Web App**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- **Dokumentasi API Swagger**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+Akses web di: [http://127.0.0.1:8000](http://127.0.0.1:8000)

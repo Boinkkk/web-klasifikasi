@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NewsClassifier &mdash; Sistem Klasifikasi Berita SVM & Skip-Gram</title>
+  <title>NewsClassifier &mdash; Sistem Klasifikasi Berita (Skip-Gram & TF-IDF)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
           <span class="status-dot"></span>
           <span id="modelStatusText">Model Ready</span>
         </span>
-        <span class="model-meta-pill">SVM &bull; Skip-Gram</span>
+        <span class="model-meta-pill" id="navbarActiveMethodBadge">Skip-Gram Active</span>
       </div>
     </header>
 
@@ -41,16 +41,48 @@
     <main class="main-content">
       <!-- Hero Intro -->
       <section class="hero-section">
-        <h1 class="hero-title">Klasifikasi Artikel Berita Otomatis</h1>
+        <h1 class="hero-title">Sistem Klasifikasi Artikel Berita</h1>
         <p class="hero-desc">
-          Ekstraksi otomatis konten berita dari URL, preprocessing teks mendalam, 
-          vektorisasi Word2Vec Skip-Gram (Mean Vector), dan klasifikasi kategori menggunakan Support Vector Machine.
+          Ekstraksi otomatis konten berita dari tautan (URL), dengan fleksibilitas pemilihan pemodelan fitur antara
+          <strong>Skip-Gram Word2Vec</strong> atau <strong>TF-IDF Vectorizer</strong>.
         </p>
       </section>
 
       <!-- Input Card -->
       <section class="card input-card">
-        <!-- Input Mode Switcher -->
+        <!-- Model Method Selection -->
+        <div class="model-selection-wrapper">
+          <span class="section-label">Pilih Metode Pemodelan:</span>
+          <div class="model-cards-grid">
+            <div class="model-option-card active" id="optSkipgram" onclick="selectModelMethod('skipgram')">
+              <div class="model-opt-header">
+                <div class="model-opt-title-wrap">
+                  <span class="model-opt-radio"></span>
+                  <strong class="model-opt-title">Skip-Gram (Word2Vec)</strong>
+                </div>
+                <span class="model-opt-pill">Mean Vector</span>
+              </div>
+              <p class="model-opt-desc">
+                Hanya pembersihan noise. <strong>Proses stopword removal & stemming dilewati</strong> sesuai karakteristik word embedding.
+              </p>
+            </div>
+
+            <div class="model-option-card" id="optTfidf" onclick="selectModelMethod('tfidf')">
+              <div class="model-opt-header">
+                <div class="model-opt-title-wrap">
+                  <span class="model-opt-radio"></span>
+                  <strong class="model-opt-title">TF-IDF Vectorizer</strong>
+                </div>
+                <span class="model-opt-pill">Model TF-IDF</span>
+              </div>
+              <p class="model-opt-desc">
+                Menggunakan <strong>Stopword Removal & Stemming Sastrawi lengkap</strong> dengan model klasifikasi TF-IDF khusus.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Mode Switcher (URL vs Text) -->
         <div class="mode-tabs">
           <button type="button" class="tab-btn active" id="tabUrlBtn" onclick="switchMode('url')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -157,11 +189,11 @@
           <div class="tracker-arrow">&rarr;</div>
           <div class="tracker-item" id="track-step-2">2. Noise Cleaning</div>
           <div class="tracker-arrow">&rarr;</div>
-          <div class="tracker-item" id="track-step-3">3. Preprocessing (Sastrawi)</div>
+          <div class="tracker-item" id="track-step-3">3. Preprocessing Teks</div>
           <div class="tracker-arrow">&rarr;</div>
-          <div class="tracker-item" id="track-step-4">4. Skip-Gram Embedding</div>
+          <div class="tracker-item" id="track-step-4">4. Vektorisasi Fitur</div>
           <div class="tracker-arrow">&rarr;</div>
-          <div class="tracker-item" id="track-step-5">5. Prediksi SVM</div>
+          <div class="tracker-item" id="track-step-5">5. Prediksi Klasifikasi</div>
         </div>
       </section>
 
@@ -174,6 +206,7 @@
               <span class="pred-subheading">Kategori Terprediksi</span>
               <div class="pred-highlight">
                 <span id="predictedBadge" class="pred-badge badge-sport">SPORT</span>
+                <span class="method-tag-pill" id="resultMethodPill">Skip-Gram</span>
                 <span class="exec-time-pill" id="execTimeBadge">0.0 ms</span>
               </div>
             </div>
@@ -207,6 +240,10 @@
               <span id="metaTitle" class="meta-val highlight-title">-</span>
             </div>
             <div class="meta-item">
+              <span class="meta-label">Metode Pemodelan Digunakan</span>
+              <span id="metaMethodFull" class="meta-val highlight-method">-</span>
+            </div>
+            <div class="meta-item">
               <span class="meta-label">Penulis / Redaksi</span>
               <span id="metaAuthor" class="meta-val">-</span>
             </div>
@@ -214,7 +251,7 @@
               <span class="meta-label">Tanggal Publikasi</span>
               <span id="metaDate" class="meta-val">-</span>
             </div>
-            <div class="meta-item">
+            <div class="meta-item full-width">
               <span class="meta-label">Tautan Asli</span>
               <a id="metaUrl" href="#" target="_blank" rel="noopener noreferrer" class="meta-link">-</a>
             </div>
@@ -224,14 +261,14 @@
         <!-- Deep Details Tabs Card -->
         <div class="card details-card">
           <div class="details-tab-header">
-            <button class="dtab-btn active" onclick="switchDetailTab('content')">
+            <button class="dtab-btn active" id="tabBtnContent" onclick="switchDetailTab('content')">
               Konten Terekstraksi (<span id="tabWordCount">0</span> kata)
             </button>
-            <button class="dtab-btn" onclick="switchDetailTab('preprocessing')">
-              Hasil Preprocessing Sastrawi
+            <button class="dtab-btn" id="tabBtnPreprocess" onclick="switchDetailTab('preprocessing')">
+              Hasil Preprocessing
             </button>
-            <button class="dtab-btn" onclick="switchDetailTab('embedding')">
-              Detail Skip-Gram Embedding
+            <button class="dtab-btn" id="tabBtnFeature" onclick="switchDetailTab('embedding')">
+              Detail Representasi Fitur
             </button>
           </div>
 
@@ -239,7 +276,7 @@
             <!-- Tab 1: Extracted Content -->
             <div id="dtab-content" class="dtab-pane active">
               <div class="pane-header">
-                <span class="pane-note">Konten artikel bersih yang berhasil diekstrak melalui modul trafilatura:</span>
+                <span class="pane-note">Konten artikel bersih yang berhasil diekstrak melalui modul ekstraksi:</span>
                 <button type="button" class="btn-copy" onclick="copyText('contentBody')">Salin Teks</button>
               </div>
               <div id="contentBody" class="text-content-box"></div>
@@ -247,6 +284,9 @@
 
             <!-- Tab 2: Preprocessing -->
             <div id="dtab-preprocessing" class="dtab-pane">
+              <div class="preprocessing-notice" id="preprocessNoticeBox">
+                <span id="preprocessNoticeText">Pembersihan teks...</span>
+              </div>
               <div class="stat-pills-row">
                 <div class="stat-card">
                   <span class="stat-num" id="statTotalTokens">0</span>
@@ -254,40 +294,42 @@
                 </div>
                 <div class="stat-card">
                   <span class="stat-num" id="statMatchedTokens">0</span>
-                  <span class="stat-desc">Token Masuk Vocab</span>
+                  <span class="stat-desc" id="statMatchedLabel">Token Masuk Vocab</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-num" id="statOovTokens">0</span>
-                  <span class="stat-desc">Token Di Luar Vocab (OOV)</span>
+                  <span class="stat-desc" id="statOovLabel">Token OOV</span>
                 </div>
               </div>
               <div class="pane-header">
-                <span class="pane-note">Teks setelah pembersihan noise, stopword removal, dan stemming Sastrawi:</span>
+                <span class="pane-note" id="preprocessPaneNote">Teks yang diteruskan ke tahap pemodelan:</span>
                 <button type="button" class="btn-copy" onclick="copyText('preprocessedBody')">Salin Hasil</button>
               </div>
               <div id="preprocessedBody" class="text-content-box font-mono"></div>
             </div>
 
-            <!-- Tab 3: Word Embedding -->
+            <!-- Tab 3: Feature Representation (Skip-gram or TF-IDF) -->
             <div id="dtab-embedding" class="dtab-pane">
               <div class="embedding-info-grid">
                 <div class="embed-box">
-                  <div class="embed-title">Dimensi Vektor Fitur (Skip-Gram)</div>
-                  <div class="embed-val" id="embedDimVal">100 Dimensi</div>
+                  <div class="embed-title" id="embedDimTitle">Dimensi Fitur</div>
+                  <div class="embed-val" id="embedDimVal">-</div>
                 </div>
                 <div class="embed-box">
-                  <div class="embed-title">Metode Representasi Dokumen</div>
-                  <div class="embed-val">Mean Word Vector (\(\frac{1}{N}\sum v_i\))</div>
+                  <div class="embed-title">Metode Representasi</div>
+                  <div class="embed-val" id="embedMethodVal">-</div>
                 </div>
               </div>
 
+              <!-- Keywords / Vocab Section -->
               <div class="pane-header">
-                <span class="pane-note">Sampel kata yang ditemukan dalam vocabulary Skip-Gram:</span>
+                <span class="pane-note" id="featureKeywordsLabel">Fitur Kata Utama:</span>
               </div>
               <div id="vocabChips" class="vocab-chips-container"></div>
 
+              <!-- Vector Preview Section -->
               <div class="pane-header mt-4">
-                <span class="pane-note">Cuplikan 10 Nilai Pertama Rata-rata Vektor Dokumen:</span>
+                <span class="pane-note" id="vectorPreviewLabel">Cuplikan Nilai Vektor:</span>
               </div>
               <div id="vectorSampleBox" class="vector-box font-mono"></div>
             </div>
@@ -312,7 +354,7 @@
       <div class="footer-content">
         <span>Web Sistem Klasifikasi Berita &copy; 2026</span>
         <span class="footer-separator">&bull;</span>
-        <span>Model: SVM Classifier + Skip-Gram Word Embedding</span>
+        <span>Pemodelan: Skip-Gram (Word2Vec) &amp; TF-IDF Vectorizer</span>
       </div>
     </footer>
   </div>
