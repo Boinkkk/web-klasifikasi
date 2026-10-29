@@ -1,0 +1,74 @@
+# ==============================================================================
+# Byte-compiled / optimized / DLL files (Cache Python)
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ==============================================================================
+# Virtual Environments (Folder library lokal, TIDAK boleh diunggah ke hosting)
+# ==============================================================================
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# ==============================================================================
+# Editor & IDE settings (Konfigurasi lokal pengembang)
+# ==============================================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ==============================================================================
+# OS Generated Files (Sampah sistem operasi Windows / macOS)
+# ==============================================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# ==============================================================================
+# Logs, Temp, and Secrets
+# ==============================================================================
+*.log
+logs/
+tmp/
+temp/
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.local
+.env.*.local
+
+# ==============================================================================
+# Sertifikat SSL & Tool Windows Lokal (Jangan unggah kunci privat ke git)
+# ==============================================================================
+*.key
+*.pem
+*.crt
+nssm.exe
+*.zip
+*.bak
+
+# ==============================================================================
+# File Model Wajib Masuk Git (Pastikan tidak terabaikan secara tidak sengaja)
+# ==============================================================================
+!backend/model/*.joblib
+!backend/model/*.model

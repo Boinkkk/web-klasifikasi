@@ -1,0 +1,38 @@
+{
+  "nama_model": "TF-IDF + Logistic Regression Classifier",
+  "jenis_fitur": "Term Frequency - Inverse Document Frequency (TF-IDF)",
+  "jumlah_fitur_kosakata": 6486,
+  "model_klasifikasi": "LogisticRegression",
+  "parameter_model": {
+    "C": 1.0,
+    "class_weight": null,
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": null,
+    "max_iter": 100,
+    "multi_class": "deprecated",
+    "n_jobs": null,
+    "penalty": "l2",
+    "random_state": 42,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "test_accuracy": 100.0,
+  "5_fold_cv_mean": 99.0,
+  "target_classes": [
+    "Finance",
+    "Sport"
+  ],
+  "label_mapping": {
+    "0": "Finance",
+    "1": "Sport"
+  },
+  "files": [
+    "tfidf_vectorizer.joblib",
+    "model_klasifikasi_tfidf_terbaik.joblib",
+    "model_tfidf_pipeline.joblib"
+  ]
+}

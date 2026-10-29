@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsClassifier &mdash; Sistem Klasifikasi Berita (Skip-Gram & TF-IDF)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=2.1">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <header class="app-header">
+      <div class="brand-area">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+            <path d="M18 14h-8"/>
+            <path d="M15 18h-5"/>
+            <path d="M10 6h8v4h-8V6Z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">NewsClassifier</span>
+          <span class="brand-sub">PPW Text Mining</span>
+        </div>
+      </div>
+      
+      <div class="header-badges">
+        <span class="status-pill status-ready" id="modelStatusPill">
+          <span class="status-dot"></span>
+          <span id="modelStatusText">Model Ready</span>
+        </span>
+        <span class="model-meta-pill" id="navbarActiveMethodBadge">Skip-Gram Active</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Hero Intro -->
+      <section class="hero-section">
+        <h1 class="hero-title">Sistem Klasifikasi Artikel Berita</h1>
+        <p class="hero-desc">
+          Ekstraksi otomatis konten berita dari tautan (URL), dengan fleksibilitas pemilihan pemodelan fitur antara
+          <strong>Skip-Gram Word2Vec</strong>, <strong>TF-IDF Vectorizer</strong>, atau <strong>Komparasi Langsung Kedua Model</strong>.
+        </p>
+      </section>
+
+      <!-- Input Card -->
+      <section class="card input-card">
+        <!-- Model Method Selection (3 Options) -->
+        <div class="model-selection-wrapper">
+          <span class="section-label">Pilih Metode Pemodelan:</span>
+          <div class="model-cards-grid grid-3">
+            <!-- Option 1: Skip-Gram -->
+            <div class="model-option-card active" id="optSkipgram" onclick="selectModelMethod('skipgram')">
+              <div class="model-opt-header">
+                <div class="model-opt-title-wrap">
+                  <span class="model-opt-radio"></span>
+                  <strong class="model-opt-title">Skip-Gram (Word2Vec)</strong>
+                </div>
+                <span class="model-opt-pill">Mean Vector</span>
+              </div>
+              <p class="model-opt-desc">
+                Pembersihan noise saja. <strong>Stopword removal &amp; stemmer dilewati</strong> sesuai karakter embedding.
+              </p>
+            </div>
+
+            <!-- Option 2: TF-IDF -->
+            <div class="model-option-card" id="optTfidf" onclick="selectModelMethod('tfidf')">
+              <div class="model-opt-header">
+                <div class="model-opt-title-wrap">
+                  <span class="model-opt-radio"></span>
+                  <strong class="model-opt-title">TF-IDF Vectorizer</strong>
+                </div>
+                <span class="model-opt-pill">Model TF-IDF</span>
+              </div>
+              <p class="model-opt-desc">
+                Menggunakan <strong>Stopword Removal &amp; Stemming Sastrawi lengkap</strong> dengan bobot frekuensi kata.
+              </p>
+            </div>
+
+            <!-- Option 3: Side-by-Side Comparison -->
+            <div class="model-option-card" id="optCompare" onclick="selectModelMethod('compare')">
+              <div class="model-opt-header">
+                <div class="model-opt-title-wrap">
+                  <span class="model-opt-radio"></span>
+                  <strong class="model-opt-title">Bandingkan Keduanya</strong>
+                </div>
+                <span class="model-opt-pill pill-compare">Side-by-Side</span>
+              </div>
+              <p class="model-opt-desc">
+                Eksekusi <strong>kedua model sekaligus</strong> untuk membandingkan konsistensi, kecepatan, dan akurasi.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Mode Switcher (URL vs Text) -->
+        <div class="mode-tabs">
+          <button type="button" class="tab-btn active" id="tabUrlBtn" onclick="switchMode('url')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Ekstraksi Tautan (URL)
+          </button>
+          <button type="button" class="tab-btn" id="tabTextBtn" onclick="switchMode('text')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Input Teks Langsung
+          </button>
+        </div>
+
+        <!-- URL Input Form -->
+        <form id="urlForm" class="form-container" onsubmit="handleUrlSubmit(event)">
+          <div class="input-group">
+            <div class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <input 
+              type="url" 
+              id="urlInput" 
+              placeholder="Tempel tautan berita di sini (cth: https://sport.detik.com/... atau https://finance.detik.com/...)" 
+              required
+              autocomplete="off"
+            />
+            <button type="submit" class="submit-btn" id="btnSubmitUrl">
+              <span class="btn-text">Klasifikasikan</span>
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Quick Samples -->
+          <div class="quick-samples">
+            <span class="samples-label">Coba Contoh Tautan:</span>
+            <button type="button" class="sample-chip" onclick="fillUrl('https://sport.detik.com/sepakbola/liga-indonesia/d-7689123/timnas-indonesia-lolos-ke-babak-berikutnya-kualifikasi-piala-dunia')">
+              ⚽ Berita Sepakbola (Sport)
+            </button>
+            <button type="button" class="sample-chip" onclick="fillUrl('https://finance.detik.com/moneter/d-7689456/nilai-tukar-rupiah-menguat-terhadap-dolar-as-ihsg-naik-tajam')">
+              📈 Berita Finansial (Finance)
+            </button>
+          </div>
+        </form>
+
+        <!-- Direct Text Input Form (Hidden by default) -->
+        <form id="textForm" class="form-container hidden" onsubmit="handleTextSubmit(event)">
+          <div class="textarea-group">
+            <textarea 
+              id="textInput" 
+              rows="5" 
+              placeholder="Ketik atau tempel paragraf teks berita di sini..."
+              required
+            ></textarea>
+          </div>
+          <div class="form-footer">
+            <span class="text-hint">Minimal 10 karakter teks berita.</span>
+            <button type="submit" class="submit-btn" id="btnSubmitText">
+              <span class="btn-text">Klasifikasikan Teks</span>
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Error Banner -->
+        <div id="errorAlert" class="alert-box alert-error hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div class="alert-content">
+            <strong class="alert-title">Gagal Memproses</strong>
+            <p id="errorMessage" class="alert-desc">Terjadi kesalahan.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Processing State Indicator -->
+      <section id="processingCard" class="card processing-card hidden">
+        <div class="spinner-container">
+          <div class="spinner"></div>
+        </div>
+        <div class="processing-info">
+          <h3 id="stepTitle" class="processing-title">Mengekstraksi Konten Berita...</h3>
+          <p id="stepSubtitle" class="processing-subtitle">Mengambil data dari URL dan mengurai struktur artikel</p>
+        </div>
+        <div class="pipeline-tracker">
+          <div class="tracker-item active" id="track-step-1">1. Scraping URL</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-2">2. Noise Cleaning</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-3">3. Preprocessing Teks</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-4">4. Vektorisasi Fitur</div>
+          <div class="tracker-arrow">&rarr;</div>
+          <div class="tracker-item" id="track-step-5">5. Prediksi Klasifikasi</div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultSection" class="results-wrapper hidden">
+        
+        <!-- SIDE-BY-SIDE COMPARISON CARD (Visible when Compare mode is used) -->
+        <div id="comparisonCard" class="card comparison-card hidden">
+          <div class="comparison-banner" id="comparisonBanner">
+            <div class="banner-badge" id="consensusBadge">KONSENSUS MODEL</div>
+            <h2 class="banner-title" id="consensusTitle">Kedua Model Sepakat</h2>
+            <p class="banner-desc" id="consensusDesc">Skip-Gram dan TF-IDF memberikan hasil prediksi yang sama untuk artikel ini.</p>
+          </div>
+
+          <div class="side-by-side-grid">
+            <!-- Left Card: Skip-Gram -->
+            <div class="compare-subcard">
+              <div class="subcard-header">
+                <div>
+                  <h3 class="subcard-title">Skip-Gram (Word2Vec)</h3>
+                  <span class="subcard-sub">Mean Word Vector &bull; Tanpa Stemming</span>
+                </div>
+                <span class="exec-time-pill" id="compareSgTime">0.0 ms</span>
+              </div>
+              <div class="compare-pred-row">
+                <span id="compareSgBadge" class="pred-badge badge-sport">SPORT</span>
+              </div>
+              <div class="compare-prob-container">
+                <div class="prob-row">
+                  <span class="prob-name">Sport</span>
+                  <div class="prob-bar-bg">
+                    <div id="compareSgProbSportBar" class="prob-bar-fill fill-sport" style="width: 0%;"></div>
+                  </div>
+                  <span id="compareSgProbSportVal" class="prob-pct">0%</span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-name">Finance</span>
+                  <div class="prob-bar-bg">
+                    <div id="compareSgProbFinanceBar" class="prob-bar-fill fill-finance" style="width: 0%;"></div>
+                  </div>
+                  <span id="compareSgProbFinanceVal" class="prob-pct">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Card: TF-IDF -->
+            <div class="compare-subcard">
+              <div class="subcard-header">
+                <div>
+                  <h3 class="subcard-title">TF-IDF Vectorizer</h3>
+                  <span class="subcard-sub">Matrix Bobot Kata &bull; Stemming Sastrawi</span>
+                </div>
+                <span class="exec-time-pill" id="compareTfidfTime">0.0 ms</span>
+              </div>
+              <div class="compare-pred-row">
+                <span id="compareTfidfBadge" class="pred-badge badge-sport">SPORT</span>
+              </div>
+              <div class="compare-prob-container">
+                <div class="prob-row">
+                  <span class="prob-name">Sport</span>
+                  <div class="prob-bar-bg">
+                    <div id="compareTfidfProbSportBar" class="prob-bar-fill fill-sport" style="width: 0%;"></div>
+                  </div>
+                  <span id="compareTfidfProbSportVal" class="prob-pct">0%</span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-name">Finance</span>
+                  <div class="prob-bar-bg">
+                    <div id="compareTfidfProbFinanceBar" class="prob-bar-fill fill-finance" style="width: 0%;"></div>
+                  </div>
+                  <span id="compareTfidfProbFinanceVal" class="prob-pct">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SINGLE MODEL RESULT CARD (Visible for Skip-Gram or TF-IDF standalone) -->
+        <div id="singleResultCard" class="card result-card">
+          <div class="result-header">
+            <div class="pred-label-wrapper">
+              <span class="pred-subheading">Kategori Terprediksi</span>
+              <div class="pred-highlight">
+                <span id="predictedBadge" class="pred-badge badge-sport">SPORT</span>
+                <span class="method-tag-pill" id="resultMethodPill">Skip-Gram</span>
+                <span class="exec-time-pill" id="execTimeBadge">0.0 ms</span>
+              </div>
+            </div>
+
+            <!-- Probabilities breakdown -->
+            <div class="prob-wrapper" id="probContainer">
+              <div class="prob-label">Distribusi Keyakinan Model:</div>
+              <div class="prob-bars">
+                <div class="prob-row">
+                  <span class="prob-name">Sport</span>
+                  <div class="prob-bar-bg">
+                    <div id="probBarSport" class="prob-bar-fill fill-sport" style="width: 0%;"></div>
+                  </div>
+                  <span id="probValSport" class="prob-pct">0%</span>
+                </div>
+                <div class="prob-row">
+                  <span class="prob-name">Finance</span>
+                  <div class="prob-bar-bg">
+                    <div id="probBarFinance" class="prob-bar-fill fill-finance" style="width: 0%;"></div>
+                  </div>
+                  <span id="probValFinance" class="prob-pct">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadata Grid -->
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Judul Berita</span>
+              <span id="metaTitle" class="meta-val highlight-title">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Metode Pemodelan Digunakan</span>
+              <span id="metaMethodFull" class="meta-val highlight-method">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Penulis / Redaksi</span>
+              <span id="metaAuthor" class="meta-val">-</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Tanggal Publikasi</span>
+              <span id="metaDate" class="meta-val">-</span>
+            </div>
+            <div class="meta-item full-width">
+              <span class="meta-label">Tautan Asli</span>
+              <a id="metaUrl" href="#" target="_blank" rel="noopener noreferrer" class="meta-link">-</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deep Details Tabs Card -->
+        <div class="card details-card">
+          <div class="details-tab-header">
+            <button class="dtab-btn active" id="tabBtnContent" onclick="switchDetailTab('content')">
+              Konten Terekstraksi (<span id="tabWordCount">0</span> kata)
+            </button>
+            <button class="dtab-btn" id="tabBtnPreprocess" onclick="switchDetailTab('preprocessing')">
+              Hasil Preprocessing
+            </button>
+            <button class="dtab-btn" id="tabBtnFeature" onclick="switchDetailTab('embedding')">
+              Detail Representasi &amp; Kata Kunci
+            </button>
+          </div>
+
+          <div class="details-tab-body">
+            <!-- Tab 1: Extracted Content -->
+            <div id="dtab-content" class="dtab-pane active">
+              <div class="pane-header">
+                <span class="pane-note">Konten artikel bersih yang berhasil diekstrak melalui modul ekstraksi:</span>
+                <button type="button" class="btn-copy" onclick="copyText('contentBody')">Salin Teks</button>
+              </div>
+              <div id="contentBody" class="text-content-box"></div>
+            </div>
+
+            <!-- Tab 2: Preprocessing -->
+            <div id="dtab-preprocessing" class="dtab-pane">
+              <div class="preprocessing-notice" id="preprocessNoticeBox">
+                <span id="preprocessNoticeText">Pembersihan teks...</span>
+              </div>
+              <div class="stat-pills-row">
+                <div class="stat-card">
+                  <span class="stat-num" id="statTotalTokens">0</span>
+                  <span class="stat-desc">Total Token Kata</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="statMatchedTokens">0</span>
+                  <span class="stat-desc" id="statMatchedLabel">Token Masuk Vocab</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="statOovTokens">0</span>
+                  <span class="stat-desc" id="statOovLabel">Token OOV</span>
+                </div>
+              </div>
+              <div class="pane-header">
+                <span class="pane-note" id="preprocessPaneNote">Teks yang diteruskan ke tahap pemodelan:</span>
+                <button type="button" class="btn-copy" onclick="copyText('preprocessedBody')">Salin Hasil</button>
+              </div>
+              <div id="preprocessedBody" class="text-content-box font-mono"></div>
+            </div>
+
+            <!-- Tab 3: Feature Representation (Bar Chart & Chips) -->
+            <div id="dtab-embedding" class="dtab-pane">
+              <div class="embedding-info-grid">
+                <div class="embed-box">
+                  <div class="embed-title" id="embedDimTitle">Dimensi Fitur</div>
+                  <div class="embed-val" id="embedDimVal">-</div>
+                </div>
+                <div class="embed-box">
+                  <div class="embed-title">Metode Representasi</div>
+                  <div class="embed-val" id="embedMethodVal">-</div>
+                </div>
+              </div>
+
+              <!-- BAR CHART VISUALIZATION (Fitur Poin 2) -->
+              <div class="chart-section-header">
+                <div>
+                  <h4 class="chart-title" id="chartSectionTitle">Grafik Bobot Kata Kunci Teratas</h4>
+                  <p class="chart-subtitle" id="chartSectionSubtitle">Distribusi kata-kata yang paling berkontribusi dalam klasifikasi dokumen</p>
+                </div>
+                <div class="chart-view-toggle">
+                  <button type="button" class="view-toggle-btn active" id="btnViewBar" onclick="toggleKeywordView('bar')">Grafik Batang</button>
+                  <button type="button" class="view-toggle-btn" id="btnViewChips" onclick="toggleKeywordView('chips')">Tag Cloud</button>
+                </div>
+              </div>
+
+              <!-- 1. Bar Chart Container -->
+              <div id="keywordsBarChart" class="keyword-bars-container"></div>
+
+              <!-- 2. Tag Chips Container -->
+              <div id="vocabChips" class="vocab-chips-container hidden"></div>
+
+              <!-- Vector Preview Section -->
+              <div class="pane-header mt-4">
+                <span class="pane-note" id="vectorPreviewLabel">Cuplikan Nilai Vektor:</span>
+              </div>
+              <div id="vectorSampleBox" class="vector-box font-mono"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Reset -->
+        <div class="action-footer">
+          <button type="button" class="btn-secondary" onclick="resetApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Uji Artikel Lain
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span>Web Sistem Klasifikasi Berita &copy; 2026</span>
+        <span class="footer-separator">&bull;</span>
+        <span>Pemodelan: Skip-Gram (Word2Vec) &amp; TF-IDF Vectorizer</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js?v=2.1"></script>
+</body>
+</html>

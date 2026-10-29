@@ -1,0 +1,15 @@
+services:
+  web-klasifikasi:
+    build: .
+    container_name: web-klasifikasi-app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+    # Optional resource limits jika VPS berkapasitas kecil
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1G
